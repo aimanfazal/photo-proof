@@ -14,6 +14,7 @@ import streamlit as st
 from PIL import Image
 
 from photoproof import indexer, search as search_module
+from photoproof.files import file_exists
 from photoproof.model import embed_image, load_model
 from photoproof.storage import StorageClient
 
@@ -65,8 +66,11 @@ def _make_thumbnail(path: str) -> Image.Image | None:
         return None
 
 
-def _show_gallery(results: list[dict]) -> None:
-    """Render search results as a photo grid."""
+def _show_gallery(results: list[dict], db_client: StorageClient) -> None:
+    """Render search results as a photo grid.
+
+    Detects missing files, shows a clear message, and removes stale DB rows.
+    """
     if not results:
         st.info("No results found. Try a different query or index more photos.")
         return
@@ -74,8 +78,19 @@ def _show_gallery(results: list[dict]) -> None:
     cols = st.columns(GALLERY_COLUMNS)
     for idx, result in enumerate(results):
         col = cols[idx % GALLERY_COLUMNS]
+        path = result["path"]
         with col:
-            thumb = _make_thumbnail(result["path"])
+            if not file_exists(path):
+                st.warning(
+                    f"⚠ File not found — removed from index  \n`{path}`"
+                )
+                try:
+                    db_client.delete_photo(path)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not remove stale record %s — %s", path, exc)
+                continue
+
+            thumb = _make_thumbnail(path)
             if thumb:
                 st.image(thumb, use_container_width=True)
             else:
@@ -83,7 +98,7 @@ def _show_gallery(results: list[dict]) -> None:
             st.caption(
                 f"**{result['filename']}**  \n"
                 f"Similarity: {result['similarity']:.2%}  \n"
-                f"`{result['path']}`"
+                f"`{path}`"
             )
 
 
@@ -141,20 +156,35 @@ if index_button:
     if not folder_path:
         st.warning("Please enter a folder path first.")
     else:
-        with st.spinner(f"Indexing `{folder_path}` …"):
-            try:
-                summary = indexer.index_folder(
-                    folder_path, clip_model, preprocess, db_client
-                )
-                st.info(
-                    f"✅ Indexing complete — "
-                    f"**{summary['total']}** found, "
-                    f"**{summary['indexed']}** indexed, "
-                    f"**{summary['skipped']}** skipped (unchanged), "
-                    f"**{summary['failed']}** failed."
-                )
-            except Exception as exc:
-                st.error(f"Indexing error: {exc}")
+        progress_bar = st.progress(0.0, text="Scanning folder…")
+        status_text = st.empty()
+        try:
+            def _on_progress(done: int, total: int, filename: str) -> None:
+                frac = done / total if total > 0 else 1.0
+                progress_bar.progress(frac, text=f"Indexing {done}/{total}: {filename}")
+                status_text.text(filename)
+
+            summary = indexer.index_folder(
+                folder_path, clip_model, preprocess, db_client,
+                progress_callback=_on_progress,
+            )
+            progress_bar.progress(1.0, text="Done")
+            status_text.empty()
+            st.info(
+                f"✅ Indexing complete — "
+                f"**{summary['total']}** found, "
+                f"**{summary['indexed']}** indexed, "
+                f"**{summary['skipped']}** skipped (unchanged), "
+                f"**{summary['failed']}** failed."
+            )
+            if summary.get("errors"):
+                with st.expander(f"⚠ Failed files ({len(summary['errors'])}) — click to expand"):
+                    for err in summary["errors"]:
+                        st.markdown(f"- `{err['path']}`  \n  _{err['reason']}_")
+        except Exception as exc:
+            progress_bar.empty()
+            status_text.empty()
+            st.error(f"Indexing error: {exc}")
 
 # ---------------------------------------------------------------------------
 # Handle: Search by uploaded image
@@ -171,7 +201,7 @@ if uploaded_file is not None:
             query_embedding = embed_image(clip_model, preprocess, pil_image)
             results = db_client.search(query_embedding, limit=10)
 
-        _show_gallery(results)
+        _show_gallery(results, db_client)
     except Exception as exc:
         st.error(f"Image search error: {exc}")
 
@@ -200,6 +230,6 @@ if search_button:
                 results = search_module.search_photos(
                     query_text, clip_model, tokenizer, db_client, limit=12
                 )
-                _show_gallery(results)
+                _show_gallery(results, db_client)
             except Exception as exc:
                 st.error(f"Search error: {exc}")

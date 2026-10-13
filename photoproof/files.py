@@ -57,6 +57,11 @@ def scan_folder(folder_path: str) -> list[dict]:
     return results
 
 
+def file_exists(path: str) -> bool:
+    """Return True if the file at path currently exists on disk."""
+    return Path(path).is_file()
+
+
 def open_image(path: str) -> Image.Image | None:
     """Open an image file and return it as an RGB PIL Image.
 

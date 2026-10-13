@@ -46,7 +46,7 @@ ON CONFLICT (path) DO UPDATE SET
     embedding     = EXCLUDED.embedding;
 """
 
-_GET_INDEXED_SQL = "SELECT path, modified_time FROM photos;"
+_GET_INDEXED_SQL = "SELECT path, modified_time, model_id FROM photos;"
 
 _SEARCH_SQL = """
 SELECT
@@ -121,12 +121,12 @@ class StorageClient:
     # Read
     # ------------------------------------------------------------------
 
-    def get_indexed_files(self) -> dict[str, float]:
-        """Return {path: modified_time} for every already-indexed photo."""
+    def get_indexed_files(self) -> dict[str, tuple[float, str]]:
+        """Return {path: (modified_time, model_id)} for every already-indexed photo."""
         with self._conn.cursor() as cur:
             cur.execute(_GET_INDEXED_SQL)
             rows = cur.fetchall()
-        return {row[0]: row[1] for row in rows}
+        return {row[0]: (row[1], row[2]) for row in rows}
 
     def search(
         self, query_embedding: np.ndarray, limit: int = 10
@@ -144,6 +144,12 @@ class StorageClient:
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
+
+    def delete_photo(self, path: str) -> None:
+        """Remove a photo record from the database by its file path."""
+        with self._conn.cursor() as cur:
+            cur.execute("DELETE FROM photos WHERE path = %s;", (path,))
+        self._conn.commit()
 
     def close(self) -> None:
         """Close the underlying connection."""
