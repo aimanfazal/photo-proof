@@ -2,7 +2,7 @@
 app.py — PhotoProof Streamlit application.
 
 Run with:
-    streamlit run app.py
+    streamlit run photoproof/app.py
 """
 
 from __future__ import annotations
@@ -10,6 +10,14 @@ from __future__ import annotations
 import csv
 import io as _io
 import logging
+import sys
+from pathlib import Path
+
+# Ensure the project root is on sys.path so `from photoproof import …` resolves
+# correctly when Streamlit launches this file directly (e.g. `streamlit run photoproof/app.py`).
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 import streamlit as st
 from PIL import Image
