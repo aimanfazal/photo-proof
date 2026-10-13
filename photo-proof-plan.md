@@ -53,7 +53,7 @@ The goal is a locally runnable Streamlit application that:
 - `MVP.md` §Technology Stack (full dependency list).
 - `MVP.md` §Tiger Data Integration / Development-time MCP integration (`.vscode/mcp.json` format).
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
@@ -86,7 +86,7 @@ The goal is a locally runnable Streamlit application that:
 - `.env.example` should include both `DATABASE_URL=your_postgresql_connection_string` and `SSL_MODE=require`.
 - Embedding dimension: `512` (ViT-B-32 / openai weights).
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
@@ -113,7 +113,7 @@ The goal is a locally runnable Streamlit application that:
 - `MVP.md` §How It Works — OpenCLIP image and text encoder roles.
 - Model: `ViT-B-32`, pretrained: `openai`, embedding dim: `512`.
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
@@ -136,7 +136,7 @@ The goal is a locally runnable Streamlit application that:
 - `MVP.md` §Module responsibilities — `files.py` validates image paths and opens original images.
 - `MVP.md` §Phase 2 Reliability — corrupt file handling noted as future work; `open_image` should still be defensive.
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
@@ -162,7 +162,7 @@ The goal is a locally runnable Streamlit application that:
 - `MVP.md` §Search Pipeline step 2–3 — embeddings generated once and reused.
 - `MVP.md` §Phase 1 Roadmap — "Scan and index local images" and "Generate and persist image embeddings".
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
@@ -183,7 +183,7 @@ The goal is a locally runnable Streamlit application that:
 - `MVP.md` §Search Pipeline steps 4–7.
 - `MVP.md` §Tiger Data Integration — the cosine-distance SQL query.
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
@@ -218,7 +218,7 @@ The goal is a locally runnable Streamlit application that:
 - `MVP.md` §Module Responsibilities — `app.py` provides the Streamlit interface.
 - Streamlit `@st.cache_resource` is the correct decorator for shared connections and models (not `@st.cache_data`).
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ---
 
