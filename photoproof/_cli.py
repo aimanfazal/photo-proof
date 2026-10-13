@@ -1,6 +1,6 @@
 """
 photoproof/_cli.py
-Thin entry point so `photoproof` console script launches `streamlit run app.py`.
+Thin entry point so `photoproof` console script launches `streamlit run photoproof/app.py`.
 """
 
 from __future__ import annotations
@@ -11,5 +11,5 @@ from pathlib import Path
 
 
 def main() -> None:
-    app_path = Path(__file__).parent.parent / "app.py"
+    app_path = Path(__file__).parent / "app.py"
     sys.exit(subprocess.call(["streamlit", "run", str(app_path)] + sys.argv[1:]))

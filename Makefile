@@ -9,7 +9,7 @@ install:
 	$(PIP) install -e ".[dev]"
 
 run:
-	$(PYTHON) -m streamlit run app.py
+	$(PYTHON) -m streamlit run photoproof/app.py
 
 test:
 	$(PYTHON) -m pytest tests/ -v

@@ -91,8 +91,8 @@ make run
 Or manually:
 
 ```bash
-.venv/Scripts/python -m streamlit run app.py   # Windows
-# source .venv/bin/activate && streamlit run app.py  # macOS/Linux
+.venv/Scripts/python -m streamlit run photoproof/app.py   # Windows
+# source .venv/bin/activate && streamlit run photoproof/app.py  # macOS/Linux
 ```
 
 The browser opens automatically at `http://localhost:8501`.
@@ -182,9 +182,15 @@ Natural-language query  ──►  Vector similarity search  ──►  Ranked g
 ```
 photo-proof/
 ├── .vscode/mcp.json          Tiger Data MCP config for VS Code
+├── docs/
+│   ├── mvp.md                Original MVP spec and project rationale
+│   ├── plan-phase1.md        Phase 1 implementation plan
+│   ├── plan-phase2.md        Phase 2 reliability plan
+│   └── plan-phase3.md        Phase 3 features plan
 ├── photoproof/
 │   ├── __init__.py
 │   ├── _cli.py               Console script entry point
+│   ├── app.py                Streamlit application
 │   ├── model.py              Load OpenCLIP; embed images and text
 │   ├── indexer.py            Scan, embed, and persist photos
 │   ├── search.py             Text search and similar-photo search
@@ -194,7 +200,6 @@ photo-proof/
 │   ├── conftest.py           Fixtures and CLI options
 │   ├── test_indexer.py       Indexer unit tests
 │   └── test_search.py        Search unit and quality tests
-├── app.py                    Streamlit application
 ├── pyproject.toml            Package metadata and dependencies
 ├── requirements.txt          Pip-compatible dependency list
 ├── Makefile                  Developer shortcuts
