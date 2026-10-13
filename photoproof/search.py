@@ -1,6 +1,7 @@
 """
 photoproof/search.py
 Convert a natural-language query to an embedding and return ranked photo results.
+Also supports similar-photo search using an already-indexed image's stored embedding.
 """
 
 from __future__ import annotations
@@ -37,3 +38,28 @@ def search_photos(
     """
     query_embedding = model_module.embed_text(clip_model, tokenizer, query)
     return db_client.search(query_embedding, limit=limit)
+
+
+def search_similar(
+    path: str,
+    db_client: StorageClient,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Find photos visually similar to an already-indexed image.
+
+    Uses the stored embedding — no image file is opened and no CLIP inference
+    is performed.
+
+    Args:
+        path: file path of an already-indexed photo.
+        db_client: connected StorageClient instance.
+        limit: maximum number of results to return.
+
+    Returns:
+        List of dicts ordered by descending similarity (the query photo itself
+        is excluded). Returns an empty list if path is not in the index.
+    """
+    embedding = db_client.get_photo_embedding(path)
+    if embedding is None:
+        return []
+    return db_client.search_excluding(embedding, exclude_path=path, limit=limit)

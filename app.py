@@ -7,7 +7,8 @@ Run with:
 
 from __future__ import annotations
 
-import io
+import csv
+import io as _io
 import logging
 
 import streamlit as st
@@ -64,6 +65,60 @@ def _make_thumbnail(path: str) -> Image.Image | None:
         return img
     except Exception:  # noqa: BLE001
         return None
+
+
+def _apply_filters_and_export(results: list[dict]) -> list[dict]:
+    """Render filter controls, apply them to results, and offer a CSV download.
+
+    Returns the filtered result list for passing to _show_gallery.
+    """
+    if not results:
+        return results
+
+    col_fname, col_sim = st.columns([3, 2])
+    with col_fname:
+        fname_filter = st.text_input(
+            "Filter by filename",
+            placeholder="e.g. IMG_",
+            key="filter_filename",
+            label_visibility="visible",
+        )
+    with col_sim:
+        sim_threshold = st.slider(
+            "Minimum similarity",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.0,
+            step=0.01,
+            key="filter_similarity",
+        )
+
+    filtered = [
+        r for r in results
+        if (not fname_filter or fname_filter.lower() in r["filename"].lower())
+        and r["similarity"] >= sim_threshold
+    ]
+
+    if filtered:
+        # Build CSV in memory using stdlib csv.
+        buf = _io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=["rank", "filename", "similarity", "path"])
+        writer.writeheader()
+        for rank, row in enumerate(filtered, start=1):
+            writer.writerow({
+                "rank": rank,
+                "filename": row["filename"],
+                "similarity": f"{row['similarity']:.6f}",
+                "path": row["path"],
+            })
+        st.download_button(
+            label="⬇ Download results as CSV",
+            data=buf.getvalue(),
+            file_name="photoproof_results.csv",
+            mime="text/csv",
+        )
+
+    return filtered
 
 
 def _show_gallery(results: list[dict], db_client: StorageClient) -> None:
@@ -130,6 +185,18 @@ with st.sidebar:
         help="The uploaded image is used as a search query — it is not stored.",
     )
 
+    st.divider()
+
+    # ---- Similar-photo search ----
+    st.subheader("Find similar photos")
+    similar_path = st.text_input(
+        "Indexed photo path",
+        placeholder="/Users/you/Photos/IMG_1048.JPG",
+        key="similar_path",
+        help="Enter the path of an already-indexed photo to find visually similar images.",
+    )
+    similar_button = st.button("Find Similar", use_container_width=True)
+
 # ---------------------------------------------------------------------------
 # Main area
 # ---------------------------------------------------------------------------
@@ -194,14 +261,15 @@ if uploaded_file is not None:
     st.subheader("Results — image search")
     try:
         image_bytes = uploaded_file.read()
-        pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        pil_image = Image.open(_io.BytesIO(image_bytes)).convert("RGB")
         st.image(pil_image, caption="Query image", width=200)
 
         with st.spinner("Searching for similar photos…"):
             query_embedding = embed_image(clip_model, preprocess, pil_image)
             results = db_client.search(query_embedding, limit=10)
 
-        _show_gallery(results, db_client)
+        filtered = _apply_filters_and_export(results)
+        _show_gallery(filtered, db_client)
     except Exception as exc:
         st.error(f"Image search error: {exc}")
 
@@ -230,6 +298,31 @@ if search_button:
                 results = search_module.search_photos(
                     query_text, clip_model, tokenizer, db_client, limit=12
                 )
-                _show_gallery(results, db_client)
+                filtered = _apply_filters_and_export(results)
+                _show_gallery(filtered, db_client)
             except Exception as exc:
                 st.error(f"Search error: {exc}")
+
+# ---------------------------------------------------------------------------
+# Handle: Similar-photo search
+# ---------------------------------------------------------------------------
+
+if similar_button:
+    if not similar_path.strip():
+        st.warning("Please enter a file path first.")
+    else:
+        st.subheader(f"Similar to: {similar_path.split('/')[-1].split(chr(92))[-1]}")
+        with st.spinner("Finding similar photos…"):
+            try:
+                results = search_module.search_similar(
+                    similar_path.strip(), db_client, limit=12
+                )
+                if not results:
+                    st.warning(
+                        "Photo not found in index — index the containing folder first."
+                    )
+                else:
+                    filtered = _apply_filters_and_export(results)
+                    _show_gallery(filtered, db_client)
+            except Exception as exc:
+                st.error(f"Similar search error: {exc}")

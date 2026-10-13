@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "photoproof"
+version = "0.1.0"
+description = "Local-first AI-powered photo search using OpenCLIP and pgvector."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.35.0",
+    "open-clip-torch>=2.24.0",
+    "torch>=2.2.0",
+    "Pillow>=10.0.0",
+    "numpy>=1.26.0",
+    "psycopg[binary]>=3.1.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.14.0",
+]
+
+[project.scripts]
+photoproof = "photoproof._cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["photoproof*"]

@@ -48,6 +48,8 @@ ON CONFLICT (path) DO UPDATE SET
 
 _GET_INDEXED_SQL = "SELECT path, modified_time, model_id FROM photos;"
 
+_GET_EMBEDDING_SQL = "SELECT embedding FROM photos WHERE path = %s;"
+
 _SEARCH_SQL = """
 SELECT
     id,
@@ -56,6 +58,19 @@ SELECT
     1 - (embedding <=> %s::vector) AS similarity
 FROM photos
 WHERE embedding IS NOT NULL
+ORDER BY embedding <=> %s::vector
+LIMIT %s;
+"""
+
+_SEARCH_EXCLUDING_SQL = """
+SELECT
+    id,
+    path,
+    filename,
+    1 - (embedding <=> %s::vector) AS similarity
+FROM photos
+WHERE embedding IS NOT NULL
+  AND path != %s
 ORDER BY embedding <=> %s::vector
 LIMIT %s;
 """
@@ -128,6 +143,25 @@ class StorageClient:
             rows = cur.fetchall()
         return {row[0]: (row[1], row[2]) for row in rows}
 
+    def get_photo_embedding(self, path: str) -> np.ndarray | None:
+        """Fetch the stored embedding for a given file path.
+
+        Returns:
+            A 1-D float32 numpy array, or None if the path is not indexed.
+        """
+        with self._conn.cursor() as cur:
+            cur.execute(_GET_EMBEDDING_SQL, (path,))
+            row = cur.fetchone()
+        if row is None:
+            return None
+        # pgvector returns the vector as a string like '[0.1,0.2,...]'
+        raw = row[0]
+        if isinstance(raw, str):
+            values = raw.strip("[]").split(",")
+            return np.array([float(v) for v in values], dtype=np.float32)
+        # Some drivers return a list or numpy array directly.
+        return np.array(raw, dtype=np.float32)
+
     def search(
         self, query_embedding: np.ndarray, limit: int = 10
     ) -> list[dict[str, Any]]:
@@ -135,6 +169,22 @@ class StorageClient:
         embedding_str = "[" + ",".join(str(float(x)) for x in query_embedding) + "]"
         with self._conn.cursor() as cur:
             cur.execute(_SEARCH_SQL, (embedding_str, embedding_str, limit))
+            rows = cur.fetchall()
+        return [
+            {"id": r[0], "path": r[1], "filename": r[2], "similarity": float(r[3])}
+            for r in rows
+        ]
+
+    def search_excluding(
+        self, query_embedding: np.ndarray, exclude_path: str, limit: int = 10
+    ) -> list[dict[str, Any]]:
+        """Like search(), but excludes a specific path from results."""
+        embedding_str = "[" + ",".join(str(float(x)) for x in query_embedding) + "]"
+        with self._conn.cursor() as cur:
+            cur.execute(
+                _SEARCH_EXCLUDING_SQL,
+                (embedding_str, exclude_path, embedding_str, limit),
+            )
             rows = cur.fetchall()
         return [
             {"id": r[0], "path": r[1], "filename": r[2], "similarity": float(r[3])}
