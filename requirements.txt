@@ -1,0 +1,21 @@
+# Web UI
+streamlit>=1.35.0
+
+# AI / embeddings
+open-clip-torch>=2.24.0
+# PyTorch: install the CPU-only build if you have no GPU:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Or let open-clip-torch pull in its default torch dependency.
+torch>=2.2.0
+
+# Image processing
+Pillow>=10.0.0
+
+# Numerical
+numpy>=1.26.0
+
+# PostgreSQL driver (psycopg v3, binary build — no libpq required)
+psycopg[binary]>=3.1.0
+
+# Environment variable loading
+python-dotenv>=1.0.0
