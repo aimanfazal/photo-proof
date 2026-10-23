@@ -6,8 +6,6 @@ PhotoProof is a local-first, AI-powered photo search application. Instead of bro
 
 It combines [OpenCLIP](https://github.com/mlfoundations/open_clip) embeddings with [Tiger Data](https://www.tigerdata.com/) PostgreSQL + `pgvector` for persistent semantic search, all through a [Streamlit](https://streamlit.io/) browser interface.
 
----
-
 ## Features
 
 - **Natural-language search** — describe a photo in plain English.
@@ -175,8 +173,6 @@ Natural-language query  ──►  Vector similarity search  ──►  Ranked g
 4. At query time, the text query (or uploaded/indexed image) is encoded and ranked by cosine distance.
 5. `app.py` renders the top results in a Streamlit gallery.
 
----
-
 ## Project Structure
 
 ```
@@ -248,6 +244,25 @@ A project license has not yet been selected. Before public release, choose a lic
 - [Streamlit](https://streamlit.io/)
 - [Tiger Data](https://www.tigerdata.com/)
 - [pgvector](https://github.com/pgvector/pgvector)
+
+---
+
+## Built for Hacktoberfest '26
+
+PhotoProof was built for the **Hacktoberfest Open-Source AI Challenge — Week 2: Side Hustle**. It applies open-weight AI to a practical everyday problem: finding moments in a growing personal photo library.
+
+The project uses a hybrid local-plus-hosted workflow:
+
+- **Local AI inference:** OpenCLIP generates image and text embeddings on the user's machine.
+- **Tiger Data storage:** PostgreSQL stores photo metadata and 512-dimensional embeddings through `pgvector`.
+- **Semantic retrieval:** cosine-distance vector search ranks photos against natural-language, uploaded-image, or similar-photo queries.
+- **Privacy-conscious design:** original image files remain in their local folders; the database receives embeddings and searchable metadata.
+
+### Prize Categories
+
+- **Tiger Data** — PhotoProof uses Tiger Data's PostgreSQL infrastructure with `pgvector` to persist image embeddings and power semantic vector search.
+
+This architecture keeps inference close to the user's device while providing reliable, persistent vector retrieval. It avoids per-query model API fees while making indexed photos available for fast, repeatable semantic searches.
 
 ---
 
